@@ -161,6 +161,60 @@ def bayes_classifier(noisy_image, standards, p):
 
     return key_list[np.argmax(res)]
 
+def plot_task(or_key, standards, p, savepath = None):
+    """Shows the result of solving the task.
+       >>> plot_task(0, {'0':np.array([[0]]), '1':np.array([[1]])}, 0.1)
+       Traceback (most recent call last):
+        ...
+       TypeError: or_key must be string
+       >>> plot_task('0', [np.array([[0]]), np.array([[1]])], 0.1)
+       Traceback (most recent call last):
+        ...
+       TypeError: standards must be dictionary
+       >>> plot_task('2', {'0':np.array([[0]]), '1':np.array([[1]])}, 0.1)
+       Traceback (most recent call last):
+        ...
+       ValueError: or_key must be in standards
+    """
+    if type(or_key) != str:
+        raise TypeError("or_key must be string")
+    if type(standards) != dict:
+        raise TypeError("standards must be dictionary")
+    if or_key not in standards:
+        raise ValueError("or_key must be in standards")
+    X = standards[or_key]
+    Y, Z = noise_generator(X, p)
+    gs_key = bayes_classifier(Z, standards, p)
+
+    im_list = [X, Y, Z, standards[gs_key]]
+    lb_list = [f'Original: {or_key}', 'Noise',
+                'Generated', f'Guess: {gs_key}']
+
+    for i in range(4):
+        plt.figure(figsize = (4, 4))
+        plt.imshow(im_list[i], cmap = 'binary')
+        plt.box(False)
+        plt.xticks([])
+        plt.yticks([])
+        plt.xlabel(lb_list[i], fontsize = 24)
+
+        buf = io.BytesIO()
+        plt.savefig(buf, format = 'png')
+        plt.close()
+        im_cur = Image.open(buf)
+        if i == 0:
+            h, w = im_cur.height, im_cur.width
+            im_res = Image.new('RGB', (4 * w, h))
+        im_res.paste(im_cur, (i * w, 0))
+
+    plt.figure(figsize = (16, 4))
+    plt.imshow(im_res, cmap = 'binary')
+    plt.axis('off')
+    plt.show()
+
+    if savepath != None:
+        im_res.save(savepath)
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
